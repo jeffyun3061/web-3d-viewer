@@ -1,0 +1,36 @@
+package com.medisection.backend.repository;
+
+import java.util.List;
+
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
+import com.medisection.backend.domain.conversation.Conversation;
+import com.medisection.backend.domain.conversation.Message;
+
+public interface MessageRepository extends JpaRepository<Message, Long> {
+
+	@Query("SELECT m FROM Message m WHERE m.conversation = :conversation AND m.id < :cursor ORDER BY m.id DESC")
+	Slice<Message> findByConversationAndIdLessThanOrderByIdDesc(
+		@Param("conversation")
+		Conversation conversation,
+		@Param("cursor")
+		Long cursor,
+		Pageable pageable);
+
+	@Query("SELECT m FROM Message m WHERE m.conversation = :conversation ORDER BY m.id DESC")
+	Slice<Message> findByConversationOrderByIdDesc(
+		@Param("conversation")
+		Conversation conversation,
+		Pageable pageable);
+
+	List<Message> findByConversationOrderByPostedAtAsc(Conversation conversation);
+
+	@Query("SELECT m FROM Message m WHERE m.conversation IN :conversations ORDER BY m.conversation.id, m.postedAt ASC")
+	List<Message> findByConversationInOrderByPostedAtAsc(
+		@Param("conversations")
+		List<Conversation> conversations);
+}

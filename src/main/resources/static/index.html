@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>MediSection 3D 학습 뷰어</title>
+  <link rel="stylesheet" href="/styles.css" />
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "/vendor/three/build/three.module.js",
+        "three/addons/": "/vendor/three/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body>
+  <aside class="model-panel" aria-label="3D 모델 목록">
+    <div class="brand">
+      <span class="brand-mark">M3</span>
+      <div>
+        <strong>MediSection 3D</strong>
+        <span>3D 의학 학습 뷰어</span>
+      </div>
+    </div>
+
+    <section class="panel-section">
+      <div class="section-heading">
+        <h2>학습 모델</h2>
+        <span id="scene-count">0</span>
+      </div>
+      <div id="scene-list" class="scene-list"></div>
+    </section>
+
+    <section class="panel-section">
+      <div class="section-heading">
+        <h2>내 파일 열기</h2>
+      </div>
+      <label class="upload-button">
+        <span>GLB / GLTF 열기</span>
+        <input id="file-input" type="file" accept=".glb,.gltf,model/gltf+json,model/gltf-binary" />
+      </label>
+      <p class="panel-note">두개골, 해골, 장비 모델을 같은 관찰 도구로 비교할 수 있습니다.</p>
+    </section>
+  </aside>
+
+  <main class="workspace">
+    <header class="topbar">
+      <div class="title-block">
+        <span class="eyebrow">3D 기반 의학 구조 학습</span>
+        <h1 id="scene-title">학습 모델을 불러오는 중...</h1>
+        <p id="scene-description">3D 뷰어와 학습 콘텐츠를 준비하고 있습니다.</p>
+      </div>
+      <div class="topbar-actions">
+        <button id="reset-camera" class="ghost-button" type="button">시점 초기화</button>
+      </div>
+    </header>
+
+    <section class="study-layout">
+      <div class="viewer-column">
+        <div class="viewer-topline">
+          <div>
+            <strong>3D 관찰</strong>
+            <span id="status">뷰어 준비 중...</span>
+          </div>
+          <div class="mode-chip" id="mode-chip">회전 모드</div>
+        </div>
+
+        <div id="viewer" class="viewer" aria-label="3D 뷰어"></div>
+
+        <div class="section-controls" aria-label="단면 관찰 도구">
+          <label class="toggle-row">
+            <input id="section-toggle" type="checkbox" />
+            <span>단면 모드</span>
+          </label>
+
+          <div class="axis-group" role="group" aria-label="단면 축">
+            <button class="axis-button active" type="button" data-axis="z">Z</button>
+            <button class="axis-button" type="button" data-axis="x">X</button>
+            <button class="axis-button" type="button" data-axis="y">Y</button>
+          </div>
+
+          <label class="range-control">
+            <span>단면 위치</span>
+            <input id="section-slider" type="range" min="-100" max="100" value="0" />
+          </label>
+        </div>
+      </div>
+
+      <aside class="study-panel" aria-label="학습 패널">
+        <nav class="tabs" aria-label="학습 탭">
+          <button class="tab-button active" type="button" data-tab="guide">가이드</button>
+          <button class="tab-button" type="button" data-tab="mission">미션</button>
+          <button class="tab-button" type="button" data-tab="quiz">퀴즈</button>
+          <button class="tab-button" type="button" data-tab="generate">2D 생성</button>
+        </nav>
+
+        <section class="tab-panel active" data-panel="guide">
+          <div class="study-summary">
+            <h2>학습 초점</h2>
+            <p id="study-summary">모델을 불러오면 관찰 가이드가 시작됩니다.</p>
+          </div>
+
+          <div class="study-block">
+            <h3>학습 목표</h3>
+            <ul id="objectives-list" class="clean-list"></ul>
+          </div>
+
+          <div class="study-block">
+            <h3>주요 구조</h3>
+            <div id="structures-list" class="structure-list"></div>
+          </div>
+        </section>
+
+        <section class="tab-panel" data-panel="mission">
+          <div class="study-block">
+            <h3>관찰 미션</h3>
+            <div id="mission-list" class="mission-list"></div>
+          </div>
+
+          <div class="study-block">
+            <h3>완료 체크리스트</h3>
+            <div id="checklist" class="checklist"></div>
+          </div>
+        </section>
+
+        <section class="tab-panel" data-panel="quiz">
+          <div class="quiz-box">
+            <h3>빠른 확인 퀴즈</h3>
+            <p id="quiz-question">모델을 불러오면 퀴즈가 시작됩니다.</p>
+            <div id="quiz-options" class="quiz-options"></div>
+            <p id="quiz-feedback" class="quiz-feedback"></p>
+          </div>
+        </section>
+
+        <section class="tab-panel" data-panel="generate">
+          <div class="study-summary">
+            <h2>2D 이미지 기반 3D 생성</h2>
+            <p>두개골 사진처럼 한 장의 이미지를 TripoSplat 추론 서버로 보내 Gaussian Splat 결과를 만드는 확장 워크플로우입니다.</p>
+          </div>
+
+          <div class="generator-box">
+            <label class="image-drop">
+              <input id="image-input" type="file" accept="image/png,image/jpeg,image/webp" />
+              <span>입력 이미지 선택</span>
+              <small>PNG, JPG, WEBP</small>
+            </label>
+            <div id="image-preview" class="image-preview">
+              <span>두개골 또는 해부학 참고 이미지를 선택하세요.</span>
+            </div>
+          </div>
+
+          <div class="study-block">
+            <h3>연결 방식</h3>
+            <ol class="step-list">
+              <li>TripoSplat 폴더에서 Python 추론 서버를 실행합니다.</li>
+              <li>아래 버튼으로 생성 화면을 이 탭에 연결합니다.</li>
+              <li>생성된 PLY/SPLAT 결과를 내려받아 Gaussian Splat 뷰어에서 확인합니다.</li>
+            </ol>
+          </div>
+
+          <div class="command-box">
+            <span>TripoSplat 실행 위치</span>
+            <code>C:\Users\dba35\Downloads\TripoSplat-main\TripoSplat-main</code>
+            <code>python run_gradio.py</code>
+          </div>
+
+          <div class="generator-actions">
+            <button id="connect-splat" type="button">생성 화면 연결</button>
+            <button id="open-splat" class="ghost-button" type="button">새 창으로 열기</button>
+          </div>
+
+          <div id="splat-status" class="splat-status">TripoSplat 서버가 실행되면 생성 화면을 연결할 수 있습니다.</div>
+
+          <iframe id="splat-frame" class="splat-frame" title="TripoSplat 생성 화면"></iframe>
+        </section>
+      </aside>
+    </section>
+  </main>
+
+  <script type="module" src="/main.js?v=20260603-splat-1"></script>
+</body>
+</html>

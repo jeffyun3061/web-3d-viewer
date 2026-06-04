@@ -1,0 +1,13 @@
+services:
+  medisection-3d:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: medisection-3d:demo
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      JWT_SECRET_KEY: medisection-demo-secret-key-change-me-1234567890
+      JWT_EXPIRATION_TIME: "3600000"
+    restart: unless-stopped

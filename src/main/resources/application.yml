@@ -1,0 +1,40 @@
+spring:
+  application:
+    name: medisection-3d
+  profiles:
+    active: dev
+  jpa:
+    show-sql: true
+
+server:
+  tomcat:
+    mbeanregistry:
+      enabled: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: prometheus, health, info
+  tracing:
+    sampling:
+      probability: 1.0
+    export:
+      enabled: true
+
+logging:
+  pattern:
+    level: "%5p [${spring.application.name:},%X{traceId:-},%X{spanId:-}]"
+
+# OpenAI API Configuration
+openai:
+  api-key: ${OPENAI_API_KEY:}
+  base-url: ${OPENAI_BASE_URL:https://api.openai.com/v1}
+  model: ${OPENAI_MODEL:gpt-5-mini}
+  embedding-model: text-embedding-3-small
+  max-retries: 2
+  timeout-seconds: 30
+
+jwt:
+  secret-key: ${JWT_SECRET_KEY:medisection-demo-secret-key-change-me-1234567890}
+  expiration-time: ${JWT_EXPIRATION_TIME:3600000}

@@ -1,0 +1,31 @@
+package com.medisection.backend.repository;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
+
+import com.medisection.backend.domain.scene.SceneCategory;
+import com.medisection.backend.domain.scene.SceneInformation;
+import com.medisection.backend.domain.scene.SceneStatistics;
+
+@Repository
+public interface SceneStatisticsRepository extends JpaRepository<SceneStatistics, Long> {
+
+	@Query("SELECT s FROM SceneStatistics s "
+		+ "JOIN FETCH s.scene "
+		+ "WHERE s.aggregatedTime = :aggregatedTime "
+		+ "AND (:category IS NULL OR s.scene.category = :category) "
+		+ "ORDER BY s.rank ASC "
+		+ "LIMIT 5")
+	List<SceneStatistics> findTop5ByAggregatedTimeAndCategory(
+		@Param("aggregatedTime")
+		LocalDateTime aggregatedTime,
+		@Param("category")
+		SceneCategory category);
+
+	boolean existsBySceneAndAggregatedTime(SceneInformation scene, LocalDateTime aggregatedTime);
+}

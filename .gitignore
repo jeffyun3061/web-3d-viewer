@@ -1,0 +1,49 @@
+# Standard .gitignore for Java/Gradle/Spring Boot projects
+
+### Build ###
+.gradle/
+build/
+out/
+!gradle/wrapper/gradle-wrapper.jar
+
+### IDE ###
+# IntelliJ IDEA
+.idea/
+*.iws
+*.iml
+*.ipr
+
+# VS Code
+.vscode/
+
+# Eclipse
+.classpath
+.project
+.settings/
+bin/
+
+### OS ###
+.DS_Store
+Thumbs.db
+
+### Logs ###
+logs/
+*.log
+
+### Secrets & Credentials ###
+# local environment variables
+**/.env
+!.env.gpg  # 암호화된 .env 파일은 커밋 허용
+
+# Keys and Certificates
+*.jks
+*.p12
+*.key
+*.pem
+
+.gitattributes
+node_modules/
+### Verification Artifacts ###
+verification_exports/
+
+.sisyphus
