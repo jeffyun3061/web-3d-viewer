@@ -33,6 +33,9 @@ public class QuizController {
 	private final QuizService quizService;
 	private final UserRepository userRepository;
 
+	/**
+	 * 선택한 3D 씬에 연결된 퀴즈와 사용자 진행 상태를 조회합니다.
+	 */
 	@GetMapping
 	public ResponseEntity<QuizResponse> getQuizzes(
 		@AuthenticationPrincipal
@@ -46,6 +49,9 @@ public class QuizController {
 		return ResponseEntity.ok(response);
 	}
 
+	/**
+	 * 사용자의 주관식/객관식 답안을 채점 서비스로 전달합니다.
+	 */
 	@PostMapping("/{quizId}/grade")
 	public ResponseEntity<QuizDto.GradeResponse> grade(
 		@AuthenticationPrincipal
@@ -63,6 +69,9 @@ public class QuizController {
 		return ResponseEntity.ok(response);
 	}
 
+	/**
+	 * 프론트에서 누적한 퀴즈 진행 상황을 서버에 저장합니다.
+	 */
 	@PatchMapping("/progress")
 	public ResponseEntity<Void> syncProgress(
 		@AuthenticationPrincipal

@@ -59,10 +59,12 @@ const sectionState = {
   value: 0,
 };
 
+// 화면 하단 상태 문구를 한 곳에서 관리해서 비동기 로딩, 오류, 사용자 액션 결과가 같은 방식으로 표시되도록 했습니다.
 function setStatus(message) {
   els.status.textContent = message;
 }
 
+// 선택된 학습 모델의 제목과 설명을 갱신합니다. 서버 모델과 로컬 업로드 모델이 같은 UI를 재사용합니다.
 function setTitle(title, description = '') {
   els.sceneTitle.textContent = title;
   els.sceneDescription.textContent = description;
@@ -83,6 +85,8 @@ function getStudyContent(sceneInfo) {
   return foundKey ? studyContent[foundKey] : studyContent.default;
 }
 
+// Three.js 렌더러와 OrbitControls를 초기화합니다.
+// renderer는 WebGL 품질과 성능을 위해 pixelRatio를 제한하고, 단면 보기 기능을 위해 localClipping을 켰습니다.
 function createRenderer() {
   renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -97,6 +101,8 @@ function createRenderer() {
   controls.screenSpacePanning = true;
 }
 
+// 의료/해부학 모델은 내부 구조를 봐야 하므로 한 방향 조명만 쓰지 않고
+// 반구광, 키라이트, 림라이트, 포인트라이트를 섞어 표면과 윤곽이 모두 보이도록 구성했습니다.
 function setupLights() {
   scene.add(new THREE.HemisphereLight(0xf5f7f2, 0x35414b, 2.4));
 
@@ -119,6 +125,8 @@ function setupLights() {
   scene.add(grid);
 }
 
+// 뷰어 컨테이너 크기에 맞춰 카메라 비율과 WebGL 캔버스 크기를 동기화합니다.
+// 창 크기 변경 시 모델이 찌그러지지 않도록 projection matrix까지 함께 갱신합니다.
 function resize() {
   const width = els.viewer.clientWidth || 1;
   const height = els.viewer.clientHeight || 1;
@@ -127,6 +135,7 @@ function resize() {
   renderer?.setSize(width, height, false);
 }
 
+// GLTF 모델을 교체할 때 텍스처와 머티리얼을 직접 해제해 브라우저 메모리 누수를 줄입니다.
 function disposeMaterial(material) {
   if (!material) return;
   Object.keys(material).forEach((key) => {
@@ -136,6 +145,8 @@ function disposeMaterial(material) {
   material.dispose();
 }
 
+// 현재 장면의 모델과 Object URL을 정리합니다.
+// 서버 모델 선택과 로컬 파일 업로드를 반복해도 이전 geometry/material이 남지 않게 만든 부분입니다.
 function clearModel() {
   if (currentObjectUrl) {
     URL.revokeObjectURL(currentObjectUrl);
@@ -153,6 +164,8 @@ function clearModel() {
   currentModel = null;
 }
 
+// 로드된 GLTF의 모든 mesh에 그림자, 양면 렌더링, clipping 설정을 적용합니다.
+// 원래 emissive 값은 구조 하이라이트를 해제할 때 되돌리기 위해 userData에 보관합니다.
 function prepareMaterials(object) {
   object.traverse((node) => {
     if (!node.isMesh) return;
@@ -169,6 +182,8 @@ function prepareMaterials(object) {
   applySectionClipping();
 }
 
+// 모델의 bounding box를 기준으로 중심을 원점에 맞추고 카메라 거리/near/far/컨트롤 범위를 자동 계산합니다.
+// 모델마다 크기가 달라도 첫 화면에서 적절한 비율로 보이도록 한 핵심 뷰어 로직입니다.
 function frameObject(object) {
   const box = new THREE.Box3().setFromObject(object);
   const size = box.getSize(new THREE.Vector3());
@@ -196,6 +211,8 @@ function frameObject(object) {
   updateClipPlane();
 }
 
+// 단면 보기 토글 상태를 각 mesh material의 clippingPlanes에 반영합니다.
+// Three.js clipping plane은 material 단위로 적용되기 때문에 traverse로 전체 mesh를 순회합니다.
 function applySectionClipping() {
   if (!currentModel) return;
   currentModel.traverse((node) => {
@@ -208,6 +225,8 @@ function applySectionClipping() {
   });
 }
 
+// X/Y/Z 축과 슬라이더 값을 실제 clipping plane의 normal/constant 값으로 변환합니다.
+// 모델 크기 기준으로 offset을 계산해서 작은 모델과 큰 모델에서 단면 이동 감각이 비슷하도록 맞췄습니다.
 function updateClipPlane() {
   const normalMap = {
     x: new THREE.Vector3(1, 0, 0),
@@ -226,6 +245,8 @@ function updateClipPlane() {
     : '회전 모드';
 }
 
+// 서버에서 받은 학습 모델 목록을 좌측 목록 UI로 렌더링합니다.
+// 현재 선택된 모델은 active 클래스로 표시해서 사용자가 보고 있는 씬을 바로 구분할 수 있게 했습니다.
 function renderSceneList() {
   els.sceneList.innerHTML = '';
   els.sceneCount.textContent = String(currentScenes.length);
@@ -248,6 +269,8 @@ function renderSceneList() {
   });
 }
 
+// study-content.json의 학습 목표, 주요 구조, 관찰 미션, 체크리스트, 퀴즈를 화면에 바인딩합니다.
+// 학습 콘텐츠를 JS 코드와 분리해 모델이 추가되어도 UI 로직을 크게 수정하지 않도록 설계했습니다.
 function renderStudyPanel(content) {
   currentContent = content || studyContent.default;
   els.studySummary.textContent = currentContent.summary || '';
@@ -306,6 +329,8 @@ function renderStudyPanel(content) {
   });
 }
 
+// 객관식 퀴즈의 정답 여부를 즉시 피드백합니다.
+// 3D 관찰 직후 확인 학습이 이어지도록 서버 왕복 없이 프론트에서 가볍게 처리합니다.
 function answerQuiz(index) {
   const quiz = currentContent?.quiz;
   if (!quiz) return;
@@ -314,6 +339,8 @@ function answerQuiz(index) {
   els.quizFeedback.className = `quiz-feedback ${isCorrect ? 'correct' : 'wrong'}`;
 }
 
+// 구조 하이라이트를 초기 상태로 되돌립니다.
+// 하이라이트 적용 전에 저장해 둔 emissive 값을 사용해 여러 구조를 연속 클릭해도 색이 누적되지 않습니다.
 function resetHighlights() {
   if (!currentModel) return;
   currentModel.traverse((node) => {
@@ -328,6 +355,8 @@ function resetHighlights() {
   });
 }
 
+// 학습 패널에서 구조 이름을 클릭하면 GLTF node 이름과 비교해 관련 mesh를 강조합니다.
+// 모델마다 naming이 완벽히 같지 않을 수 있어 단어 단위 토큰 매칭으로 느슨하게 연결했습니다.
 function highlightStructure(label) {
   if (!currentModel) return;
   resetHighlights();
@@ -355,6 +384,8 @@ function highlightStructure(label) {
     : `${label}: 회전, 확대, 단면 모드를 사용해 이 영역을 관찰해 보세요.`);
 }
 
+// 초기 구동 시 학습 콘텐츠 JSON과 서버 모델 목록을 병렬로 불러옵니다.
+// 두 데이터가 모두 있어야 첫 모델을 자동 선택할 수 있으므로 Promise.all로 로딩 순서를 단순화했습니다.
 async function loadScenes() {
   setStatus('학습 모델 목록을 불러오는 중...');
   const [contentResponse, scenesResponse] = await Promise.all([
@@ -379,6 +410,8 @@ async function loadScenes() {
   }
 }
 
+// 좌측 목록에서 선택한 sceneId를 기준으로 서버의 GLTF 모델을 불러오고 학습 패널을 함께 갱신합니다.
+// 모델 데이터, 카메라 프레이밍, 학습 콘텐츠가 하나의 사용자 흐름으로 맞물리도록 묶은 함수입니다.
 async function selectScene(sceneId) {
   activeSceneId = sceneId;
   renderSceneList();
@@ -412,6 +445,8 @@ async function selectScene(sceneId) {
   );
 }
 
+// 사용자가 직접 선택한 GLB 또는 embedded GLTF 파일을 Object URL로 로드합니다.
+// 포트폴리오 시연에서 기본 제공 모델 외에도 임의 모델 확장 가능성을 보여주는 기능입니다.
 function loadLocalFile(file) {
   if (!file) return;
   const lowerName = file.name.toLowerCase();
@@ -445,6 +480,8 @@ function loadLocalFile(file) {
   );
 }
 
+// 2D 이미지 기반 3D 생성 기능에 넘길 입력 이미지를 미리 보여줍니다.
+// 실제 생성은 TripoSplat 화면에서 진행하고, 여기서는 파일 형식 확인과 미리보기만 담당합니다.
 function previewInputImage(file) {
   if (!file) return;
   if (!file.type.startsWith('image/')) {
@@ -458,6 +495,8 @@ function previewInputImage(file) {
   els.splatStatus.textContent = `${file.name} 입력 이미지가 준비되었습니다. TripoSplat 생성 화면에서 같은 이미지를 선택해 실행하세요.`;
 }
 
+// Spring Boot를 통해 로컬 TripoSplat 서버 상태를 확인한 뒤 iframe으로 연결합니다.
+// 브라우저가 직접 7860 포트를 추측하지 않고 백엔드 status API를 거쳐 실행 여부를 안내합니다.
 async function connectTripoSplat() {
   els.splatStatus.textContent = 'TripoSplat 서버 상태를 확인하는 중...';
   els.splatFrame.classList.remove('active');
@@ -481,6 +520,8 @@ async function connectTripoSplat() {
   }
 }
 
+// 버튼, 파일 업로드, 단면 슬라이더, 탭 전환 이벤트를 한 곳에서 등록합니다.
+// 초기화 순서를 명확히 하기 위해 DOM 이벤트 연결을 별도 함수로 분리했습니다.
 function bindEvents() {
   els.resetCamera.addEventListener('click', () => {
     if (currentModel) frameObject(currentModel);
@@ -536,6 +577,7 @@ function bindEvents() {
   window.addEventListener('resize', resize);
 }
 
+// requestAnimationFrame 루프입니다. OrbitControls의 damping 효과를 위해 매 프레임 update 후 렌더링합니다.
 function animate() {
   requestAnimationFrame(animate);
   controls?.update();

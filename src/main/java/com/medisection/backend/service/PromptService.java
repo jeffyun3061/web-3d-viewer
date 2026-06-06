@@ -10,6 +10,9 @@ import com.medisection.backend.domain.user.User;
 @Service
 public class PromptService {
 
+    // AI 답변의 기본 역할을 3D 의학 학습 보조자로 고정합니다.
+    // 이후 페르소나별 말투를 바꿔도 "인체 3D 모델을 보며 학습을 돕는다"는 목적은 유지됩니다.
+
     // 기존 SIMVEX 언급을 제거하고 의학 학습 컨텍스트로 변경합니다.
     private static final String ROLE_PREFIX = """
         당신은 3D 의학 학습 플랫폼의 어시스턴트입니다.
@@ -108,6 +111,10 @@ public class PromptService {
 
 		""";
 
+	/**
+	 * 사용자 프로필을 반영해 최종 system prompt를 만듭니다.
+	 * 페르소나, 학습 수준, 전공/관심 분야를 조합해 같은 질문도 사용자에게 맞는 깊이와 톤으로 답하게 합니다.
+	 */
 	public String buildSystemPrompt(Long sceneId, User user) {
 		String basePrompt = getPersonaPrompt(user);
 		String educationContext = getEducationLevelContext(user);
@@ -126,6 +133,9 @@ public class PromptService {
 		return promptBuilder.toString();
 	}
 
+	/**
+	 * 사용자가 선택한 AI 페르소나에 따라 기본 말투와 설명 방식을 바꿉니다.
+	 */
 	private String getPersonaPrompt(User user) {
 		if (user == null || user.getPersona() == null) {
 			return SYSTEM_PROMPT_TEMPLATE;
@@ -139,6 +149,9 @@ public class PromptService {
 		};
 	}
 
+	/**
+	 * 사용자의 학습 수준에 맞춰 용어 난이도와 설명 깊이를 조절하는 추가 지시문입니다.
+	 */
 	private String getEducationLevelContext(User user) {
 		if (user == null || user.getEducationLevel() == null) {
 			return "";
@@ -152,6 +165,9 @@ public class PromptService {
 		};
 	}
 
+	/**
+	 * 사용자의 전공/관심 분야를 프롬프트에 넣어 답변 예시와 비유가 더 관련 있게 나오도록 합니다.
+	 */
 	private String getSpecializationContext(User user) {
 		if (user == null || user.getSpecializedIn() == null || user.getSpecializedIn().isBlank()) {
 			return "";
@@ -160,6 +176,10 @@ public class PromptService {
 		return "사용자의 전공/전문 분야: " + user.getSpecializedIn() + ". 이 배경지식을 고려해 설명해주세요.";
 	}
 
+	/**
+	 * 이전 대화 요약, 현재 선택한 3D 컴포넌트 정보, 사용자 질문을 하나의 user prompt로 합칩니다.
+	 * 3D 뷰어에서 선택한 구조가 AI 답변의 구체적인 근거로 들어가도록 만든 핵심 연결 지점입니다.
+	 */
 	public String buildUserPrompt(String runningSummary, List<Component> components, String userQuery) {
 		String summarySection = "";
 		if (runningSummary != null && !runningSummary.isBlank()) {
@@ -171,6 +191,9 @@ public class PromptService {
 		return String.format(USER_PROMPT_TEMPLATE, summarySection, componentContext, userQuery);
 	}
 
+	/**
+	 * 선택된 컴포넌트의 설명, 재질, 용도 정보를 prompt용 텍스트로 변환합니다.
+	 */
 	private String buildComponentContext(List<Component> components) {
 		if (components == null || components.isEmpty()) {
 			return "(참조된 부품 없음)";

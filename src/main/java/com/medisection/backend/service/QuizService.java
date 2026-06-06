@@ -28,6 +28,10 @@ public class QuizService {
 	private final QuizUserProgressRepository progressRepository;
 	private final SceneInformationRepository sceneRepository;
 
+	/**
+	 * 특정 3D 씬에 연결된 퀴즈 목록과 사용자의 풀이 진행 상태를 함께 조회합니다.
+	 * 처음 접근한 사용자라면 progress row를 즉시 만들어 이후 동기화가 끊기지 않게 했습니다.
+	 */
 	@Transactional
 	public QuizResponse getSceneQuizzes(Long sceneId, User user) {
 		SceneInformation scene = sceneRepository.findById(sceneId)
@@ -53,6 +57,10 @@ public class QuizService {
 		return mapToResponse(sceneId, progress, quizzes);
 	}
 
+	/**
+	 * 프론트에서 계산한 퀴즈 진행률을 서버 상태로 동기화합니다.
+	 * 마지막으로 푼 문제, 성공/실패 수, 풀이 시간, 완료 여부를 한 번에 저장합니다.
+	 */
 	@Transactional
 	public void syncProgress(Long sceneId, QuizDto.SyncProgressRequest request, User user) {
 		QuizUserProgress progress = progressRepository.findByUserIdAndSceneId(user.getId(), sceneId)
@@ -73,6 +81,10 @@ public class QuizService {
 		progressRepository.save(updated);
 	}
 
+	/**
+	 * Entity를 화면 응답 DTO로 변환합니다.
+	 * SELECT 타입만 정답을 내려주고, 다른 타입은 서버 채점/별도 로직을 확장할 수 있게 분리했습니다.
+	 */
 	private QuizResponse mapToResponse(Long sceneId, QuizUserProgress progress, List<Quiz> quizzes) {
 		QuizResponse.UserProgressDto progressDto = new QuizResponse.UserProgressDto(
 			progress.getId(),

@@ -22,6 +22,10 @@ public class AuthService {
 	private final PasswordEncoder passwordEncoder;
 	private final JwtTokenProvider jwtTokenProvider;
 
+	/**
+	 * 사용자 로그인 요청을 검증하고 프론트에서 사용할 JWT access token을 발급합니다.
+	 * 실패 사유를 세분화하지 않고 LOGIN_FAILED로 통일해 계정 존재 여부가 노출되지 않도록 했습니다.
+	 */
 	public AuthDto.LoginResponse handleLogin(AuthDto.LoginRequest request) {
 		User user = userRepository.findByUsername(request.username())
 			.orElseThrow(() -> new BusinessException(CommonErrorCode.LOGIN_FAILED));

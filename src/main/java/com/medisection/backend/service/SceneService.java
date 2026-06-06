@@ -39,6 +39,10 @@ public class SceneService {
 	private static final long POPULAR_SCENE_PARTICIPANTS_THRESHOLD = 5L;
 	private static final LocalTime AGGREGATION_TIME = LocalTime.of(7, 0);
 
+	/**
+	 * 사용자가 최근 학습한 씬 3개를 홈 화면용 데이터로 변환합니다.
+	 * UserScene의 마지막 접근 시간을 기준으로 이어서 학습할 모델을 빠르게 보여주기 위한 기능입니다.
+	 */
 	public SceneResponse getLearningScenes(Long userId) {
 		List<UserScene> top3UserScenes = userSceneRepository.findTop3ByUserIdOrderByLastAccessedAtDesc(userId,
 			PageRequest.of(0, 3));
@@ -71,6 +75,10 @@ public class SceneService {
 	 * - 현재 시각이 07:00 이후 → 어제 07:00 기준 집계 데이터 사용
 	 * - 현재 시각이 07:00 이전 → 그제 07:00 기준 집계 데이터 사용
 	 */
+	/**
+	 * 카테고리별 인기 학습 오브젝트 TOP 5를 조회합니다.
+	 * 통계 집계가 매일 07:00 기준으로 쌓인다는 전제를 코드에 반영해 랭킹 기준 시간을 계산합니다.
+	 */
 	public SceneRankResponse getSceneRanks(SceneCategory category) {
 		LocalDateTime now = LocalDateTime.now();
 		LocalDateTime aggregatedTime = calculateAggregatedTime(now);
@@ -99,6 +107,10 @@ public class SceneService {
 			.build();
 	}
 
+	/**
+	 * 전체 씬 목록을 카테고리, 검색어, 정렬 기준에 맞춰 페이지 단위로 제공합니다.
+	 * 프론트 목록 화면에서 인기순/가나다순 전환과 검색을 같은 API로 처리하기 위한 메서드입니다.
+	 */
 	public SceneListResponse getScenes(SceneCategory category, int page, int limit, String query,
 		SceneListOrder order) {
 		Sort sort;
@@ -141,6 +153,10 @@ public class SceneService {
 	 * - 현재 시각이 07:00 이후 → 어제 07:00
 	 * - 현재 시각이 07:00 이전 → 그제 07:00
 	 */
+	/**
+	 * 랭킹 집계 기준 시간을 계산합니다.
+	 * 현재 시간이 07:00 이후면 전날 07:00, 이전이면 이틀 전 07:00 데이터를 사용합니다.
+	 */
 	private LocalDateTime calculateAggregatedTime(LocalDateTime now) {
 		if (!now.toLocalTime().isBefore(AGGREGATION_TIME)) {
 			// 07:00 이후 → 어제 07:00
@@ -151,6 +167,9 @@ public class SceneService {
 		}
 	}
 
+	/**
+	 * 상세 화면에서 필요한 제목, 영문명, 설명만 가볍게 조회합니다.
+	 */
 	public com.medisection.backend.dto.SceneDetailResponse getSceneDetail(Long sceneId) {
 		SceneInformation sceneInformation = sceneInformationRepository.findById(sceneId)
 			.orElseThrow(() -> new IllegalArgumentException("Scene not found with id: " + sceneId));

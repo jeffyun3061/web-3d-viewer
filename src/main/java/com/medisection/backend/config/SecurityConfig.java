@@ -21,6 +21,10 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 @EnableWebSecurity
 public class SecurityConfig {
 
+    /**
+     * 현재 시연 버전은 정적 3D 뷰어와 공개 API 접근을 우선해 모든 요청을 허용합니다.
+     * JWT 관련 클래스는 남겨두었기 때문에, 운영 전환 시 이 지점에서 인증 필터를 다시 연결하면 됩니다.
+     */
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         // 모든 요청을 인증 없이 허용합니다. JWT 필터를 제거하여 누구나 접근 가능한 상태로 설정합니다.
@@ -36,6 +40,9 @@ public class SecurityConfig {
 		return new BCryptPasswordEncoder();
 	}
 
+	/**
+	 * 프론트 정적 페이지, Docker 환경, TripoSplat 연동처럼 출처가 달라질 수 있는 실행 환경을 고려한 CORS 설정입니다.
+	 */
 	@Bean
 	public CorsConfigurationSource corsConfigurationSource() {
 		// health-check 전용 CORS 설정 (모든 오리진 허용)

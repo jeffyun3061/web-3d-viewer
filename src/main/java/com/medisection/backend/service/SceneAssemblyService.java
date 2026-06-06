@@ -74,6 +74,10 @@ public class SceneAssemblyService {
 		this.resourcePatternResolver = resourcePatternResolver;
 	}
 
+	/**
+	 * 프론트에서 전달한 GLTF 노드 배치 정보를 사용자별 조립 상태로 저장합니다.
+	 * 모델 파일명으로 Scene을 찾고, 각 노드의 transform matrix를 Alignment 테이블에 upsert하는 흐름입니다.
+	 */
 	public void saveAssembly(Long userId, SceneAssemblyDto dto) {
 		// 1. User 조회
 		User user = userRepository.findById(userId)
@@ -92,6 +96,10 @@ public class SceneAssemblyService {
 		}
 	}
 
+	/**
+	 * 뷰어에서 변경된 카메라 기준점(lookAt)과 컴포넌트 행렬을 한 번에 동기화합니다.
+	 * 화면 조작 결과를 서버에 저장해 사용자가 다시 들어왔을 때 같은 학습 상태를 복원할 수 있게 합니다.
+	 */
 	public void syncSceneState(Long userId, Long sceneId, SceneSyncDto dto) {
 		// 1. 공통 User & Scene 조회 (트랜잭션 내에서 한 번만 조회)
 		User user = userRepository.findById(userId)
@@ -135,6 +143,10 @@ public class SceneAssemblyService {
 		}
 	}
 
+	/**
+	 * 단일 컴포넌트의 matrix 상태를 저장합니다.
+	 * 기존 Alignment가 있으면 갱신하고, 처음 보는 node라면 Component까지 자동 생성해 학습 데이터와 연결합니다.
+	 */
 	private void updateComponentState(User user, SceneInformation scene, ComponentStateDto compState) {
 		String nodeName = compState.getNodeName();
 		String matrixJson;
@@ -183,6 +195,10 @@ public class SceneAssemblyService {
 		alignmentRepository.save(alignment);
 	}
 
+	/**
+	 * 사용자가 현재 씬을 어느 정도 분해해서 보고 있는지 조회합니다.
+	 * 단면/분해 UI 상태를 서버에 보관하기 위한 조회 API의 서비스 로직입니다.
+	 */
 	public DisassemblyLevelDto getDisassemblyLevel(Long userId, Long sceneId) {
 		UserScene userScene = userSceneRepository.findByUserIdAndSceneId(userId, sceneId)
 			.orElseThrow(() -> new IllegalArgumentException(
@@ -193,6 +209,10 @@ public class SceneAssemblyService {
 			.build();
 	}
 
+	/**
+	 * 분해 정도는 0~100 사이 값으로 제한해 프론트 슬라이더와 같은 범위를 사용합니다.
+	 * UserScene이 아직 없으면 기본 관찰 상태를 함께 생성해서 첫 저장도 자연스럽게 처리합니다.
+	 */
 	public void updateDisassemblyLevel(Long userId, Long sceneId, Integer level) {
 		if (level < 0 || level > 100) {
 			throw new IllegalArgumentException("Disassembly level must be between 0 and 100");
@@ -228,6 +248,10 @@ public class SceneAssemblyService {
 
 	// ... (existing methods)
 
+	/**
+	 * 사용자 조립 상태를 반영한 GLTF 파일을 생성합니다.
+	 * 기본 assembly_config에 저장된 사용자 Alignment matrix를 덮어쓴 뒤 Node.js 조립 스크립트를 실행합니다.
+	 */
 	public byte[] exportAssembledGltf(Long userId, Long sceneId) {
 		// 1. 데이터 조회 및 기본 설정 로드
 		SceneInformation scene = sceneRepository.findById(sceneId)
@@ -366,6 +390,10 @@ public class SceneAssemblyService {
 		}
 	}
 
+	/**
+	 * GLTF 병합은 Java에서 직접 처리하지 않고 glTF-transform 기반 Node.js 스크립트로 분리했습니다.
+	 * Java 서비스는 입력 JSON과 asset 경로를 준비하고, 결과 파일 bytes만 받아 다운로드 응답에 사용합니다.
+	 */
 	private byte[] executeNodeAssembly(File inputJson, String assetsDir) {
 		File workingDir = null;
 		try {
@@ -446,6 +474,10 @@ public class SceneAssemblyService {
 		}
 	}
 
+	/**
+	 * 기본 모델과 사용자 커스텀 모델을 선택적으로 ZIP으로 묶어 제공합니다.
+	 * 포트폴리오 시연에서 원본 상태와 사용자가 조립한 상태를 비교 다운로드할 수 있게 만든 기능입니다.
+	 */
 	public byte[] getViewerZip(Long userId, Long sceneId, String target) {
 		SceneInformation scene = sceneRepository.findById(sceneId)
 			.orElseThrow(() -> new IllegalArgumentException("Scene not found"));
@@ -495,6 +527,10 @@ public class SceneAssemblyService {
 		}
 	}
 
+	/**
+	 * 사용자 수정값이 없는 기본 GLTF를 생성합니다.
+	 * default/custom 결과물의 구조를 맞추기 위해 Component 메타데이터를 기본 config에도 주입합니다.
+	 */
 	private byte[] generateDefaultGltf(SceneInformation scene) {
 		String assetPath = scene.getAssetPath();
 		String configPath = "classpath:assets/" + assetPath + "/config/assembly_config.json";
@@ -551,6 +587,9 @@ public class SceneAssemblyService {
 		}
 	}
 
+	/**
+	 * 메모리 상에서 ZIP을 만들어 별도 임시 파일 없이 HTTP 응답으로 바로 내려줄 수 있게 합니다.
+	 */
 	private byte[] createZip(Map<String, byte[]> files) throws IOException {
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		try (ZipOutputStream zos = new ZipOutputStream(baos)) {
@@ -564,6 +603,10 @@ public class SceneAssemblyService {
 		return baos.toByteArray();
 	}
 
+	/**
+	 * GLTF node 하나를 학습용 Component와 사용자 Alignment로 변환합니다.
+	 * node 이름에서 컴포넌트 이름을 유추하고, 4x4 transform matrix는 JSON 문자열로 보관합니다.
+	 */
 	private void processNode(User user, SceneInformation scene, SceneNodeDto node) {
 		String nodeName = node.getName(); // 예: "Arm_gear1"
 		String componentName = deriveComponentName(nodeName); // 예: "Arm gear"
@@ -616,6 +659,9 @@ public class SceneAssemblyService {
 		alignmentRepository.save(toSave);
 	}
 
+	/**
+	 * 프론트에서 넘어온 파일 경로에서 Scene 검색에 사용할 순수 이름만 추출합니다.
+	 */
 	private String extractSceneName(String filePath) {
 		// "SampleScene/SampleScene.gltf" -> "SampleScene"
 		// "Car.gltf" -> "Car"
@@ -634,6 +680,9 @@ public class SceneAssemblyService {
 		return name;
 	}
 
+	/**
+	 * GLTF node 이름을 사람이 읽기 쉬운 Component 이름으로 단순 정규화합니다.
+	 */
 	private String deriveComponentName(String nodeName) {
 		// "Arm_gear1" -> "Arm gear"
 		if (nodeName == null) {

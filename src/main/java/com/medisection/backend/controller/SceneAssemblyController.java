@@ -28,6 +28,9 @@ public class SceneAssemblyController {
 
 	private final SceneAssemblyService sceneAssemblyService;
 
+	/**
+	 * 프론트에서 추출한 GLTF node 조립 정보를 서버에 저장하는 진입점입니다.
+	 */
 	@PostMapping("/assembly")
 	public ResponseEntity<Void> saveAssembly(
 		@AuthenticationPrincipal
@@ -39,6 +42,9 @@ public class SceneAssemblyController {
 		return ResponseEntity.ok().build();
 	}
 
+	/**
+	 * 카메라 기준점과 컴포넌트 matrix를 동기화해 사용자의 3D 학습 상태를 보존합니다.
+	 */
 	@PutMapping("/{sceneId}/sync")
 	public ResponseEntity<Void> syncScene(
 		@AuthenticationPrincipal
@@ -52,6 +58,9 @@ public class SceneAssemblyController {
 		return ResponseEntity.ok().build();
 	}
 
+	/**
+	 * 기본 모델과 사용자 조립 모델을 ZIP으로 내려주는 다운로드 API입니다.
+	 */
 	@GetMapping("/{sceneId}/viewer")
 	public ResponseEntity<byte[]> getViewer(
 		@AuthenticationPrincipal
@@ -69,6 +78,9 @@ public class SceneAssemblyController {
 			.body(zipBytes);
 	}
 
+	/**
+	 * 사용자가 저장한 분해 정도를 조회합니다.
+	 */
 	@GetMapping("/{sceneId}/disassembly-level")
 	public ResponseEntity<DisassemblyLevelDto> getDisassemblyLevel(
 		@AuthenticationPrincipal
@@ -80,6 +92,9 @@ public class SceneAssemblyController {
 		return ResponseEntity.ok(response);
 	}
 
+	/**
+	 * 단면/분해 슬라이더 값을 서버에 저장합니다.
+	 */
 	@PutMapping("/{sceneId}/disassembly-level")
 	public ResponseEntity<Void> updateDisassemblyLevel(
 		@AuthenticationPrincipal

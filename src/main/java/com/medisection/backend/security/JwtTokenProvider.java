@@ -28,6 +28,10 @@ public class JwtTokenProvider {
 		this.validityInMilliseconds = validityInMilliseconds;
 	}
 
+	/**
+	 * username을 subject로 넣어 access token을 생성합니다.
+	 * 만료 시간은 application.yml 설정값을 사용해 개발/운영 환경에서 다르게 조정할 수 있습니다.
+	 */
 	public String createToken(String userId) {
 		Date now = new Date();
 		Date validity = new Date(now.getTime() + validityInMilliseconds);
@@ -40,6 +44,9 @@ public class JwtTokenProvider {
 			.compact();
 	}
 
+	/**
+	 * 검증된 JWT에서 subject를 꺼내 현재 사용자 식별자로 사용합니다.
+	 */
 	public String getUserIdFromToken(String token) {
 		Claims claims = Jwts.parser()
 			.verifyWith(key)
@@ -49,6 +56,10 @@ public class JwtTokenProvider {
 		return claims.getSubject();
 	}
 
+	/**
+	 * 서명과 만료 시간을 함께 검증합니다.
+	 * 예외를 boolean으로 변환해 Spring Security 필터에서 단순하게 분기할 수 있게 했습니다.
+	 */
 	public boolean validateToken(String token) {
 		try {
 			Jwts.parser()

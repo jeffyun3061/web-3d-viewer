@@ -20,6 +20,10 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class ConversationController {
 
+    /**
+     * 현재 시연 버전에서는 인증 없이 접근 가능하도록 대화 내역을 빈 상태로 반환합니다.
+     * 실제 ConversationService 연결부는 남겨둔 서비스 계층을 통해 다시 확장할 수 있습니다.
+     */
     @GetMapping("/conversation")
     public ResponseEntity<com.medisection.backend.dto.ConversationDto.ConversationResponse> getConversation(
         @PathVariable("sceneId")
@@ -36,6 +40,10 @@ public class ConversationController {
         return ResponseEntity.ok(response);
     }
 
+    /**
+     * AI 대화 기능을 잠시 비활성화한 상태에서 프론트 흐름이 깨지지 않도록 고정 응답을 반환합니다.
+     * OpenAI 연동을 다시 켤 때는 ConversationService.sendMessage 흐름으로 교체하면 됩니다.
+     */
     @PostMapping("/conversation/messages")
     public ResponseEntity<SendMessageResponse> sendMessage(
         @PathVariable("sceneId")

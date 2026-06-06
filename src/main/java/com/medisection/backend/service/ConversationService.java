@@ -49,6 +49,10 @@ public class ConversationService {
 	private final OpenAiService openAiService;
 	private final PromptService promptService;
 
+	/**
+	 * 씬별 대화 내역을 cursor 기반으로 조회합니다.
+	 * 오래된 메시지를 추가로 불러오는 무한 스크롤 구조를 위해 id 기준 pagination을 사용했습니다.
+	 */
 	@Transactional(readOnly = true)
 	public ConversationResponse getConversation(User user, Long sceneId, Long cursor, int limit) {
 		Conversation conversation = conversationRepository.findByUserAndSceneId(user, sceneId)
@@ -96,6 +100,10 @@ public class ConversationService {
 		return new ConversationResponse(reversedMessages, pageInfo);
 	}
 
+	/**
+	 * 사용자의 질문을 저장하고, 선택된 3D 컴포넌트 정보를 프롬프트에 포함해 AI 답변을 생성합니다.
+	 * 대화 요약을 함께 갱신해 다음 질문에서도 이전 맥락을 짧게 이어갈 수 있게 했습니다.
+	 */
 	@Transactional
 	public SendMessageResponse sendMessage(User user, Long sceneId, SendMessageRequest request) {
 		Conversation conversation = conversationRepository.findByUserAndSceneId(user, sceneId)
@@ -152,6 +160,10 @@ public class ConversationService {
 		return SendMessageResponse.from(assistantMessage, componentInfoMap);
 	}
 
+	/**
+	 * 사용자가 뷰어에서 선택한 컴포넌트 id들을 검증합니다.
+	 * 일부 id가 누락되면 잘못된 학습 맥락으로 AI 답변이 생성될 수 있어 예외를 발생시킵니다.
+	 */
 	private List<Component> loadComponents(List<Long> componentIds) {
 		if (componentIds == null || componentIds.isEmpty()) {
 			return List.of();
@@ -164,6 +176,10 @@ public class ConversationService {
 		return components;
 	}
 
+	/**
+	 * 메시지에 연결된 컴포넌트 Reference를 한 번에 조회합니다.
+	 * N+1 조회를 피하면서 대화 화면에 "어떤 구조를 참고했는지" 표시할 수 있게 합니다.
+	 */
 	private Map<Long, List<Reference>> loadReferences(List<Long> messageIds) {
 		if (messageIds.isEmpty()) {
 			return Map.of();
@@ -174,6 +190,9 @@ public class ConversationService {
 			.collect(Collectors.groupingBy(ref -> ref.getMessage().getId()));
 	}
 
+	/**
+	 * Reference 엔티티를 응답 DTO에서 바로 사용할 수 있는 component map 형태로 변환합니다.
+	 */
 	private Map<String, ComponentInfo> buildComponentInfoMap(List<Reference> references) {
 		if (references == null || references.isEmpty()) {
 			return Map.of();
@@ -187,6 +206,10 @@ public class ConversationService {
 		return result;
 	}
 
+	/**
+	 * 사용자의 모든 씬 대화를 모아 학습 기록 요약을 생성합니다.
+	 * 개별 채팅방이 아니라 전체 학습 흐름을 복습 카드처럼 보여주기 위한 기능입니다.
+	 */
 	@Transactional(readOnly = true)
 	public ConversationSummaryResponse summarizeAllConversations(User user) {
 		List<Conversation> conversations = conversationRepository.findByUser(user);
@@ -222,6 +245,9 @@ public class ConversationService {
 			allMessages.size());
 	}
 
+	/**
+	 * AI 요약 요청에 넣을 대화 원문을 시간순 문자열로 구성합니다.
+	 */
 	private String buildConversationText(List<Message> messages) {
 		StringBuilder sb = new StringBuilder();
 		for (Message message : messages) {
@@ -234,6 +260,9 @@ public class ConversationService {
 		return sb.toString();
 	}
 
+	/**
+	 * 대화가 아직 없는 씬에서도 프론트가 동일한 pagination 구조를 받을 수 있게 빈 PageInfo를 반환합니다.
+	 */
 	private PageInfo emptyPageInfo(int limit) {
 		return new PageInfo(null, null, false, false, limit);
 	}
